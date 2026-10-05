@@ -57,9 +57,17 @@ export async function middleware(request: NextRequest) {
     return isPublic ? supabaseResponse : redirectTo("/login");
   }
 
-  // Auth callback & password recovery must work in any account state.
-  if (pathname.startsWith("/auth")) {
+  // Auth callback, password recovery and MFA screens work in any account state.
+  if (pathname.startsWith("/auth") || pathname === "/mfa" || pathname.startsWith("/mfa/")) {
     return supabaseResponse;
+  }
+
+  // Patient data (approved professionals) and the admin area require a
+  // second factor (HSLF-FS 2016:40). The database enforces the same (aal2).
+  async function mfaRedirect(): Promise<NextResponse | null> {
+    const { data } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+    if (data?.currentLevel === "aal2") return null;
+    return redirectTo(data?.nextLevel === "aal2" ? "/mfa/verify" : "/mfa/setup");
   }
 
   const { data: profile } = await supabase
@@ -70,8 +78,24 @@ export async function middleware(request: NextRequest) {
 
   const status = (profile?.status ?? null) as ProfessionalStatus | null;
 
+  // Admin area is independent of the admin's own professional status.
+  if (pathname === "/admin" || pathname.startsWith("/admin/")) {
+    const { data: isAdmin } = await supabase.rpc("is_admin");
+    if (isAdmin !== true) return redirectTo(homePathFor(status));
+    return (await mfaRedirect()) ?? supabaseResponse;
+  }
+
   if (isPublic || !canAccess(status, pathname)) {
+    // Staff without an approved practice of their own land in the admin area.
+    if (status !== "approved" && (isPublic || pathname === "/")) {
+      const { data: isAdmin } = await supabase.rpc("is_admin");
+      if (isAdmin === true) return redirectTo("/admin");
+    }
     return redirectTo(homePathFor(status));
+  }
+
+  if (status === "approved") {
+    return (await mfaRedirect()) ?? supabaseResponse;
   }
 
   return supabaseResponse;

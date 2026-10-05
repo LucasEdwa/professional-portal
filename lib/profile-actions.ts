@@ -21,12 +21,14 @@ type ProfileField =
   | 'price_sek'
   | 'timezone'
   | 'buffer_minutes'
+  | 'booking_notice_hours'
   | 'avatar_url';
 
 /** 'draft' = save without submitting, 'submit' = send for review, 'save' = edit an approved profile. */
 type Intent = 'draft' | 'submit' | 'save';
 
 const MAX_PRICE_SEK = 10_000;
+const MIN_PAID_PRICE_SEK = 50;
 
 function text(formData: FormData, key: string) {
   const value = formData.get(key);
@@ -61,6 +63,7 @@ export async function saveProfessionalProfile(
   const price = priceRaw === '' ? 0 : Number(priceRaw.replace(',', '.'));
   const timezone = text(formData, 'timezone');
   const bufferMinutes = Number(text(formData, 'buffer_minutes') || '15');
+  const noticeHours = Number(text(formData, 'booking_notice_hours') || '12');
   const avatarUrl = text(formData, 'avatar_url');
 
   const fieldErrors: ProfileFormState['fieldErrors'] = {};
@@ -86,8 +89,8 @@ export async function saveProfessionalProfile(
     fieldErrors.languages = 'Add at least one language.';
   }
 
-  if (!Number.isFinite(price) || price < 0 || price > MAX_PRICE_SEK) {
-    fieldErrors.price_sek = `Enter a price between 0 and ${MAX_PRICE_SEK} SEK.`;
+  if (!Number.isFinite(price) || price < 0 || price > MAX_PRICE_SEK || (price > 0 && price < MIN_PAID_PRICE_SEK)) {
+    fieldErrors.price_sek = `Enter 0 (free) or a price between ${MIN_PAID_PRICE_SEK} and ${MAX_PRICE_SEK} SEK.`;
   }
 
   if (!Intl.supportedValuesOf('timeZone').includes(timezone)) {
@@ -96,6 +99,10 @@ export async function saveProfessionalProfile(
 
   if (!Number.isInteger(bufferMinutes) || bufferMinutes < 0 || bufferMinutes > 120) {
     fieldErrors.buffer_minutes = 'Buffer must be 0–120 minutes.';
+  }
+
+  if (!Number.isInteger(noticeHours) || noticeHours < 0 || noticeHours > 168) {
+    fieldErrors.booking_notice_hours = 'Notice must be 0–168 hours.';
   }
 
   const ownAvatarPrefix = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/avatars/${user.id}/`;
@@ -117,6 +124,7 @@ export async function saveProfessionalProfile(
     session_price_sek_ore: Math.round(price * 100),
     timezone,
     buffer_minutes: bufferMinutes,
+    booking_notice_hours: noticeHours,
     avatar_url: avatarUrl || null,
   };
 

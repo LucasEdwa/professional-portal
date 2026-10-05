@@ -11,12 +11,14 @@ export default async function PortalLayout({ children }: { children: React.React
     .eq('id', user!.id)
     .single();
 
+  const { data: isAdmin } = await supabase.rpc('is_admin');
+
   const name = profile?.display_name ?? user?.email?.split('@')[0] ?? 'Professional';
   const title = profile?.title ?? undefined;
 
   return (
     <div className="flex flex-col md:flex-row min-h-screen">
-      <Sidebar name={name} title={title} />
+      <Sidebar name={name} title={title} isAdmin={isAdmin === true} />
       <div className="flex-1 min-w-0">
         {children}
       </div>

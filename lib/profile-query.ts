@@ -4,7 +4,7 @@ import type { createSupabaseServerClient } from '@/lib/supabase';
 type ServerClient = Awaited<ReturnType<typeof createSupabaseServerClient>>;
 
 export const PROFILE_COLUMNS =
-  'id, display_name, title, bio, specialties, languages, license_number, license_verified, avatar_url, session_price_sek_ore, is_active, status, timezone, buffer_minutes, rejection_reason, submitted_at';
+  'id, display_name, title, bio, specialties, languages, license_number, license_verified, avatar_url, session_price_sek_ore, is_active, status, timezone, buffer_minutes, booking_notice_hours, stripe_payouts_enabled, rejection_reason, submitted_at';
 
 /** The signed-in user and their professional profile (null if they have not started one). */
 export async function getCurrentProfessional(supabase: ServerClient) {

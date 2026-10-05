@@ -15,6 +15,15 @@ const NAV = [
     ),
   },
   {
+    href: '/availability',
+    label: 'Availability',
+    icon: (
+      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+      </svg>
+    ),
+  },
+  {
     href: '/sessions',
     label: 'Sessions',
     icon: (
@@ -44,7 +53,7 @@ const NAV = [
   },
 ];
 
-export default function Sidebar({ name, title }: { name: string; title?: string }) {
+export default function Sidebar({ name, title, isAdmin = false }: { name: string; title?: string; isAdmin?: boolean }) {
   const pathname = usePathname();
   const router = useRouter();
   const supabase = createSupabaseBrowserClient();
@@ -55,6 +64,9 @@ export default function Sidebar({ name, title }: { name: string; title?: string 
     router.refresh();
   }
 
+  const nav = isAdmin
+    ? [...NAV, { href: '/admin', label: 'Admin', icon: NAV[NAV.length - 1].icon }]
+    : NAV;
   const isActive = (href: string) => pathname === href || pathname.startsWith(href + '/');
 
   return (
@@ -68,7 +80,7 @@ export default function Sidebar({ name, title }: { name: string; title?: string 
         </button>
       </div>
       <nav className="flex gap-1 overflow-x-auto px-3 py-2">
-        {NAV.map(({ href, label }) => (
+        {nav.map(({ href, label }) => (
           <Link
             key={href}
             href={href}
@@ -91,7 +103,7 @@ export default function Sidebar({ name, title }: { name: string; title?: string 
 
       {/* Nav */}
       <nav className="flex-1 px-3 py-4 space-y-1">
-        {NAV.map(({ href, label, icon }) => {
+        {nav.map(({ href, label, icon }) => {
           const active = isActive(href);
           return (
             <Link

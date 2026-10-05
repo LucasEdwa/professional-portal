@@ -45,6 +45,8 @@ export interface ProfessionalProfileRow {
   status: ProfessionalStatus;
   timezone: string;
   buffer_minutes: number;
+  booking_notice_hours: number;
+  stripe_payouts_enabled: boolean;
   rejection_reason: string | null;
   submitted_at: string | null;
 }

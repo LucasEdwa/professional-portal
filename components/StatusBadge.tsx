@@ -3,12 +3,15 @@ const STATUS_STYLES: Record<string, string> = {
   pending:   'bg-yellow-900/40 text-yellow-400 border border-yellow-800/50',
   completed: 'bg-gray-800 text-gray-400 border border-gray-700',
   cancelled: 'bg-red-900/40 text-red-400 border border-red-800/50',
+  no_show:   'bg-orange-900/40 text-orange-400 border border-orange-800/50',
 };
+
+const LABELS: Record<string, string> = { no_show: 'no-show' };
 
 export default function StatusBadge({ status }: { status: string }) {
   return (
     <span className={`text-xs px-2 py-0.5 rounded-full font-medium capitalize ${STATUS_STYLES[status] ?? STATUS_STYLES.pending}`}>
-      {status}
+      {LABELS[status] ?? status}
     </span>
   );
 }

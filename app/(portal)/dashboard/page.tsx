@@ -15,7 +15,7 @@ export default async function DashboardPage() {
   const supabase = await createSupabaseServerClient();
   const { data: { user } } = await supabase.auth.getUser();
 
-  const [profileRes, upcomingRes, statsRes] = await Promise.all([
+  const [profileRes, upcomingRes, statsRes, openSlotsRes, unreadRes] = await Promise.all([
     supabase
       .from('professional_profiles')
       .select('display_name, title, timezone')
@@ -35,7 +35,19 @@ export default async function DashboardPage() {
       .from('professional_sessions')
       .select('id, status, scheduled_at, user_id')
       .eq('professional_id', user!.id),
+
+    supabase
+      .from('professional_slots')
+      .select('id', { count: 'exact', head: true })
+      .eq('professional_id', user!.id)
+      .eq('status', 'open')
+      .gte('starts_at', new Date().toISOString()),
+
+    supabase.rpc('session_unread_counts'),
   ]);
+  const unreadRows = (unreadRes.data ?? []) as { session_id: string; unread: number }[];
+  const unreadTotal = unreadRows.reduce((sum, r) => sum + r.unread, 0);
+  const openSlots = openSlotsRes.count ?? 0;
 
   const name = profileRes.data?.display_name ?? user?.email?.split('@')[0] ?? 'there';
   const title = profileRes.data?.title;
@@ -127,6 +139,31 @@ export default async function DashboardPage() {
           })}
         </p>
       </div>
+
+      {unreadTotal > 0 && (
+        <Link
+          href={unreadRows.length === 1 ? `/sessions/${unreadRows[0].session_id}` : '/sessions'}
+          className="flex items-center justify-between gap-4 rounded-xl border border-blue-700/50 bg-blue-900/20 px-4 py-3.5 hover:border-blue-500/60 transition-colors"
+        >
+          <p className="text-sm font-medium text-blue-200">
+            {unreadTotal} unread message{unreadTotal === 1 ? '' : 's'} from clients
+          </p>
+          <span className="text-sm text-blue-300 shrink-0">Read →</span>
+        </Link>
+      )}
+
+      {openSlots === 0 && (
+        <Link
+          href="/availability"
+          className="flex items-center justify-between gap-4 rounded-xl border border-amber-700/50 bg-amber-900/20 px-4 py-3.5 hover:border-amber-500/60 transition-colors"
+        >
+          <div>
+            <p className="text-sm font-medium text-amber-300">You have no open slots</p>
+            <p className="text-xs text-amber-200/70 mt-0.5">App users can only book you once you publish 45-minute slots.</p>
+          </div>
+          <span className="text-sm text-amber-300 shrink-0">Set availability →</span>
+        </Link>
+      )}
 
       {/* Stats */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">

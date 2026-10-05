@@ -1,4 +1,6 @@
+import StatusBadge from '@/components/StatusBadge';
 import { createSupabaseServerClient } from '@/lib/supabase';
+import { DEFAULT_TIMEZONE } from '@/lib/professional';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 
@@ -22,7 +24,10 @@ export default async function PatientPage({
 
   if (!check) notFound();
 
-  const [{ data: profile }, { data: sessions }] = await Promise.all([
+  // Patientdatalagen: log every opening of a client's records.
+  await supabase.rpc('log_record_access', { p_patient_id: userId, p_session_id: null, p_action: 'view_patient' });
+
+  const [{ data: profile }, { data: sessions }, { data: me }] = await Promise.all([
     supabase
       .from('user_profiles')
       .select('nickname, avatar_url, needs, age_range')
@@ -34,7 +39,9 @@ export default async function PatientPage({
       .eq('professional_id', user!.id)
       .eq('user_id', userId)
       .order('scheduled_at', { ascending: false }),
+    supabase.from('professional_profiles').select('timezone').eq('id', user!.id).single(),
   ]);
+  const timeZone = me?.timezone ?? DEFAULT_TIMEZONE;
 
   return (
     <main className="max-w-3xl mx-auto px-4 py-10 space-y-8">
@@ -80,6 +87,7 @@ export default async function PatientPage({
                         day: 'numeric',
                         month: 'short',
                         year: 'numeric',
+                        timeZone,
                       })}
                     </p>
                     {note?.body ? (
@@ -90,7 +98,7 @@ export default async function PatientPage({
                       <p className="text-xs text-gray-600 mt-0.5">No notes yet</p>
                     )}
                   </div>
-                  <span className="text-xs text-gray-500">{s.status as string}</span>
+                  <StatusBadge status={s.status as string} />
                 </Link>
               </li>
             );

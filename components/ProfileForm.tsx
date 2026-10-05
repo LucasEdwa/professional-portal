@@ -175,8 +175,8 @@ export default function ProfileForm({ mode, userId, profile, defaultName, timezo
       </Section>
 
       <Section title="Practice settings">
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <Field label="Session price (SEK)" error={fe.price_sek} hint="45 min. 0 = free">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <Field label="Session price (SEK)" error={fe.price_sek} hint="45 min. 0 = free; paid sessions need payouts set up">
             <input
               name="price_sek"
               type="number"
@@ -207,6 +207,17 @@ export default function ProfileForm({ mode, userId, profile, defaultName, timezo
               max={120}
               step={5}
               defaultValue={(profile?.buffer_minutes ?? 15).toString()}
+              className={inputClass}
+            />
+          </Field>
+          <Field label="Minimum booking notice" error={fe.booking_notice_hours} hint="Hours before a slot that it can still be booked">
+            <input
+              name="booking_notice_hours"
+              type="number"
+              min={0}
+              max={168}
+              step={1}
+              defaultValue={(profile?.booking_notice_hours ?? 12).toString()}
               className={inputClass}
             />
           </Field>

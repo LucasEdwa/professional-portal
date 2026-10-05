@@ -69,7 +69,11 @@ export default async function SessionsPage({
       break;
   }
 
-  const { data: sessions, error } = await query.limit(100);
+  const [{ data: sessions, error }, { data: unreadRows }] = await Promise.all([
+    query.limit(100),
+    supabase.rpc('session_unread_counts'),
+  ]);
+  const unread = new Map(((unreadRows ?? []) as { session_id: string; unread: number }[]).map((r) => [r.session_id, r.unread]));
 
   return (
     <main className="px-6 py-8 max-w-5xl mx-auto space-y-6">
@@ -120,7 +124,14 @@ export default async function SessionsPage({
                       </p>
                     </div>
                   </div>
-                  <StatusBadge status={s.status} />
+                  <div className="flex items-center gap-2">
+                    {(unread.get(s.id) ?? 0) > 0 && (
+                      <span className="text-xs font-semibold rounded-full bg-red-500 text-white px-2 py-0.5">
+                        {unread.get(s.id)} new
+                      </span>
+                    )}
+                    <StatusBadge status={s.status} />
+                  </div>
                 </Link>
               </li>
             );
